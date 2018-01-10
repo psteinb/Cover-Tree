@@ -28,6 +28,7 @@
 #include <map>
 #include <set>
 #include <cmath>
+#include <cstdint>
 #include <float.h>
 #include <iostream>
 
@@ -37,7 +38,7 @@
  *
  * The user should define double Point::distance(const Point& p) and
  * bool Point::operator==(const Point& p), where
- * p1.distance(p2)==0 doesn't necessarily mean that p1==p2). 
+ * p1.distance(p2)==0 doesn't necessarily mean that p1==p2).
  *
  * For example, a point could consist of a vector and a string
  * name, where their distance measure is simply euclidean distance but to be
@@ -73,12 +74,12 @@ class CoverTree
         void removePoint(const Point& p);
         const std::vector<Point>& getPoints() { return _points; }
         double distance(const CoverTreeNode& p) const;
-        
+
         bool isSingle() const;
         bool hasPoint(const Point& p) const;
-            
+
         const Point& getPoint() const;
-        
+
         /**
          * Return every child of the node from any level. This is handy for
          * the destructor.
@@ -101,7 +102,7 @@ class CoverTree
     bool insert_rec(const Point& p,
                     const std::vector<distNodePair>& Qi,
                     const int& level);
-    
+
     /**
      * Finds the node in Q with the minimum distance to p. Returns a
      * pair consisting of this node and the distance.
@@ -109,7 +110,7 @@ class CoverTree
     distNodePair distance(const Point& p,
                           const std::vector<CoverTreeNode*>& Q);
 
-    
+
     void remove_rec(const Point& p,
                     std::map<int,std::vector<distNodePair> >& coverSets,
                     int level,
@@ -126,7 +127,7 @@ class CoverTree
      * p,q that you will ever try to insert. The cover tree may be invalid
      * if an inaccurate maxDist is given.
      */
-    
+
     CoverTree(const std::vector<Point>& points=std::vector<Point>());
     ~CoverTree();
 
@@ -154,6 +155,11 @@ class CoverTree
      * point q from the tree satisfying p==q.
      */
     void remove(const Point& p);
+
+    /**
+     * Return the number of Points/Nodes currently in the tree
+     */
+    std::size_t size() const ;
 
     /**
      * Returns the k nearest points to p in order (the 0th element of the vector
@@ -201,7 +207,7 @@ CoverTree<Point>::~CoverTree()
         //std::cout << _numNodes << "\n";
         delete byeNode;
         //_numNodes--;
-    }   
+    }
 }
 
 template<class Point>
@@ -210,15 +216,15 @@ CoverTree<Point>::kNearestNodes(const Point& p, const unsigned int k) const
 {
     if(_root==NULL) return std::vector<CoverTreeNode*>();
     if(_numNodes<2) return std::vector<CoverTreeNode*>(1,_root);
-    
+
     //maxDist is the kth nearest known point to p, and also the farthest
     //point from p in the set minNodes defined below.
     double maxDist = p.distance(_root->getPoint());
-    
+
     //minNodes stores the k nearest known points to p.
     std::set<distNodePair> minNodes;
     minNodes.insert(std::make_pair(maxDist,_root));
-    
+
     std::vector<distNodePair> Qj(1,std::make_pair(maxDist,_root));
     for(int level=_maxLevel; level>=_minLevel; level--) {
         size_t size = Qj.size();
@@ -421,7 +427,7 @@ CoverTree<Point>::distance(const Point& p,
             minNode = *it;
         }
     }
-    return std::make_pair(minDist,minNode);  
+    return std::make_pair(minDist,minNode);
 }
 
 template<class Point>
@@ -432,16 +438,16 @@ void CoverTree<Point>::insert(const Point& newPoint)
         _numNodes=1;
         return;
     }
-    
+
     double rootDist = newPoint.distance(_root->getPoint());
-    
+
     if( rootDist == 0.0) {
         _root->addPoint(newPoint);
         return;
     }
-    
+
     int    rqdLevel = ceilf(log(rootDist)/log(base));
-    
+
     if(_numNodes == 1) {
         _maxLevel = rqdLevel+1;
         _minLevel = rqdLevel-1;
@@ -449,11 +455,11 @@ void CoverTree<Point>::insert(const Point& newPoint)
         _numNodes++;
         return;
     }
-    
+
     if(rqdLevel >= _maxLevel) {
         _maxLevel = rqdLevel + 1;
     }
-    
+
     //TODO: this is pretty inefficient, there may be a better way
     //to check if the node already exists...
     CoverTreeNode* n = kNearestNodes(newPoint,1)[0];
@@ -511,6 +517,12 @@ void CoverTree<Point>::remove(const Point& p)
 }
 
 template<class Point>
+std::size_t CoverTree<Point>::size() const {
+
+    return _numNodes;
+}
+
+template<class Point>
 std::vector<Point> CoverTree<Point>::kNearestNeighbors(const Point& p,
                                                        const unsigned int k) const
 {
@@ -533,13 +545,13 @@ void CoverTree<Point>::print() const
         std::cout << "Empty Tree\n";
         return;
     }
-    
+
     if(_numNodes==1) {
         std::cout << "Single Node -- NO levels\n";
         _root->getPoint().print();
         return;
     }
-    
+
     int d = _maxLevel-_minLevel+1;
     std::vector<CoverTreeNode*> Q;
     Q.push_back(_root);
@@ -630,7 +642,7 @@ double CoverTree<Point>::CoverTreeNode::distance(const CoverTreeNode& p) const
 {
     return _points[0].distance(p.getPoint());
 }
- 
+
 template<class Point>
 bool CoverTree<Point>::CoverTreeNode::isSingle() const
 {
@@ -680,7 +692,7 @@ bool CoverTree<Point>::isValidTree() const {
             }
         }
         std::vector<CoverTreeNode*> allChildren;
-        for(it=nodes.begin(); it!=nodes.end(); ++it) {        
+        for(it=nodes.begin(); it!=nodes.end(); ++it) {
             std::vector<CoverTreeNode*> children = (*it)->getChildren(i);
             //verify covering tree invariant: the children of node n at level
             //i are no further than base^i away
@@ -699,4 +711,3 @@ bool CoverTree<Point>::isValidTree() const {
     return true;
 }
 #endif // _COVER_TREE_H
- 
