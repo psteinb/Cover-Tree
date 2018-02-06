@@ -140,6 +140,15 @@ class CoverTree
     bool isValidTree() const;
 
     /**
+     * Just for testing/debugging. Returns true iff the cover tree satisfies the
+     * the covering tree invariants (every node in level i is greater than base^i
+     * distance from every other node, and every node in level i is less than
+     * or equal to base^i distance from its children). See the cover tree
+     * papers for details.
+     */
+    std::size_t size() const;
+
+    /**
      * Insert newPoint into the cover tree. If newPoint is already present,
      * (that is, newPoint==p for some p already in the tree), then the tree
      * is unchanged. If p.distance(newPoint)==0.0 but newPoint!=p, then
@@ -154,6 +163,13 @@ class CoverTree
      * point q from the tree satisfying p==q.
      */
     void remove(const Point& p);
+
+    /**
+     * Remove everything from the cover tree. If p is not present in the tree,
+     * it will remain unchanged. Otherwise, this will remove exactly one
+     * point q from the tree satisfying p==q.
+     */
+    void clear();
 
     /**
      * Returns the k nearest points to p in order (the 0th element of the vector
@@ -205,6 +221,29 @@ CoverTree<Point>::~CoverTree()
 }
 
 template<class Point>
+void CoverTree<Point>::clear()
+{
+    if(_root==NULL) return;
+    //Get all of the root's children (from any level),
+    //delete the root, repeat for each of the children
+    std::vector<CoverTreeNode*> nodes;
+    nodes.push_back(_root);
+    while(!nodes.empty()) {
+        CoverTreeNode* byeNode = nodes[0];
+        nodes.erase(nodes.begin());
+        std::vector<CoverTreeNode*> children = byeNode->getAllChildren();
+        nodes.insert(nodes.begin(),children.begin(),children.end());
+        //std::cout << _numNodes << "\n";
+        delete byeNode;
+        //_numNodes--;
+    }
+    _numNodes = 0;
+    _root = NULL;
+}
+
+
+
+template<class Point>
 std::vector<typename CoverTree<Point>::CoverTreeNode*>
 CoverTree<Point>::kNearestNodes(const Point& p, const unsigned int k) const
 {
@@ -222,7 +261,7 @@ CoverTree<Point>::kNearestNodes(const Point& p, const unsigned int k) const
     std::vector<distNodePair> Qj(1,std::make_pair(maxDist,_root));
     for(int level=_maxLevel; level>=_minLevel; level--) {
         size_t size = Qj.size();
-        for(int i=0; i<size; i++) {
+        for(size_t i=0; i<size; i++) {
             std::vector<CoverTreeNode*> children = Qj[i].second->getChildren(level);
             typename std::vector<CoverTreeNode*>::const_iterator it2;
             for(it2=children.begin(); it2!=children.end(); ++it2) {
@@ -239,7 +278,7 @@ CoverTree<Point>::kNearestNodes(const Point& p, const unsigned int k) const
         }
         double sep = maxDist + pow(base, level);
         size = Qj.size();
-        for(int i=0; i<size; i++) {
+        for(size_t i=0; i<size; i++) {
             if(Qj[i].first > sep) {
                 //quickly removes an element from a vector w/o preserving order.
                 Qj[i]=Qj.back();
@@ -656,6 +695,11 @@ CoverTree<Point>::CoverTreeNode::getAllChildren() const
         children.insert(children.end(), it->second.begin(), it->second.end());
     }
     return children;
+}
+
+template<class Point>
+std::size_t CoverTree<Point>::size() const {
+    return _numNodes;
 }
 
 template<class Point>
