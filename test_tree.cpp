@@ -1,6 +1,6 @@
 #include "catch.hpp"
 
-#include "Cover_Tree.h"
+#include "cover_tree.hpp"
 #include "example_point.hpp"
 #include <vector>
 #include <random>
